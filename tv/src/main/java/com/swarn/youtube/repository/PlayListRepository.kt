@@ -1,12 +1,13 @@
 package com.swarn.youtube.repository
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.swarn.youtube.api.ApiClient
 import com.swarn.youtube.api.YoutubeAPIService
-import com.swarn.youtube.model.playlistitems.PlayListItems
-import com.swarn.youtube.model.playlists.PlayLists
+import com.swarn.youtube.model.playlists.Item
 import com.swarn.youtube.vo.Resource
-import io.reactivex.Flowable
+import io.reactivex.Observable
+import io.reactivex.schedulers.Schedulers
 
 /**
  * @author Swarn Singh.
@@ -17,7 +18,12 @@ const val PLAYLIST_ITEM_PART = "contentDetails,snippet,id,status"
 
 object PlayListRepository {
 
-    private val playLists: MutableLiveData<Resource<PlayLists>> by lazy { MutableLiveData() }
+    private val playListsLiveData: LiveData<Resource<List<Item>>>
+        get() = playListsMutableLiveData
+
+    private val playListsMutableLiveData: MutableLiveData<Resource<List<Item>>> by lazy {
+        MutableLiveData()
+    }
 
     private val youtubeAPIService: YoutubeAPIService by lazy {
         ApiClient.createService(YoutubeAPIService::class.java)
@@ -26,26 +32,49 @@ object PlayListRepository {
     fun getYoutubePlayList(
         channelId: String,
         apiKey: String
-    ): MutableLiveData<Resource<PlayLists>> {
+    ): LiveData<Resource<List<Item>>> {
 
-        //TODO
-        playLists.postValue(Resource.Loading())
-        return playLists
+        var playLists = ArrayList<Item>()
+
+        getPlayLists(channelId, apiKey)
+            .subscribeOn(Schedulers.io())
+            .flatMap {
+                getPlayListItems(it, apiKey)
+            }.subscribe(
+                {
+                    playLists.add(it)
+                },
+                {
+                    playListsMutableLiveData.postValue(Resource.Error(it.localizedMessage))
+                },
+                {
+                    playListsMutableLiveData.postValue(Resource.Success(playLists))
+                }
+            )
+        playListsMutableLiveData.postValue(Resource.Loading())
+        return playListsLiveData
     }
 
     private fun getPlayLists(
         channelId: String,
         apiKey: String
-    ): Flowable<PlayLists> {
-
+    ): Observable<Item> {
         return youtubeAPIService.getPlaylists(
             PLAYLIST_PART,
             channelId,
             apiKey
-        )
+        ).flatMap {
+            Observable.fromIterable(it.items)
+                .subscribeOn(Schedulers.io())
+        }
     }
 
-    private fun getPlayListItems(playListId: String, apiKey: String): Flowable<PlayListItems> {
-        return youtubeAPIService.getPlayListItems(PLAYLIST_ITEM_PART, playListId, apiKey)
+    private fun getPlayListItems(item: Item, apiKey: String): Observable<Item> {
+        return youtubeAPIService.getPlayListItems(PLAYLIST_ITEM_PART, item.id, apiKey)
+            .subscribeOn(Schedulers.io())
+            .map {
+                item.playListItems = it
+                item
+            }
     }
 }

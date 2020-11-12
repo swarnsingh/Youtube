@@ -1,8 +1,8 @@
 package com.swarn.youtube.viewmodel
 
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import com.swarn.youtube.model.playlists.PlayLists
+import com.swarn.youtube.model.playlists.Item
 import com.swarn.youtube.repository.PlayListRepository
 import com.swarn.youtube.vo.Resource
 
@@ -11,7 +11,7 @@ import com.swarn.youtube.vo.Resource
  */
 class PlayListViewModel : ViewModel() {
 
-    fun getYoutubePlayList(channelId: String, apiKey : String): MutableLiveData<Resource<PlayLists>> {
+    fun getYoutubePlayList(channelId: String, apiKey: String): LiveData<Resource<List<Item>>> {
         return PlayListRepository.getYoutubePlayList(channelId, apiKey)
     }
 }

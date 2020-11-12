@@ -2,6 +2,7 @@ package com.swarn.youtube.model.playlists
 
 
 import com.google.gson.annotations.SerializedName
+import com.swarn.youtube.model.playlistitems.PlayListItems
 
 data class Item(
     @SerializedName("contentDetails")
@@ -13,5 +14,7 @@ data class Item(
     @SerializedName("kind")
     val kind: String = "",
     @SerializedName("snippet")
-    val snippet: Snippet = Snippet()
+    val snippet: Snippet = Snippet(),
+
+    var playListItems: PlayListItems
 )

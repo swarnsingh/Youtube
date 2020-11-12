@@ -21,10 +21,11 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.GlideDrawable
 import com.bumptech.glide.request.animation.GlideAnimation
 import com.bumptech.glide.request.target.SimpleTarget
-import com.swarn.youtube.CardPresenter
 import com.swarn.youtube.R
 import com.swarn.youtube.Video
 import com.swarn.youtube.VideoList
+import com.swarn.youtube.YoutubeCardPresenter
+import com.swarn.youtube.model.playlists.Item
 import com.swarn.youtube.viewmodel.PlayListViewModel
 import com.swarn.youtube.vo.Resource
 import java.util.*
@@ -55,22 +56,19 @@ class MainFragment : BrowseSupportFragment() {
 
         setupUIElements()
 
-        //TODO: Replace this with api response
-        loadRows()
-
         setupEventListeners()
 
         playListViewModel.getYoutubePlayList(GOOGLE_CHANNEL_ID, getString(R.string.api_key))
             .observe(viewLifecycleOwner, {
                 when (it) {
                     is Resource.Success -> {
-                        Log.d(TAG, it.data.toString())
+                        loadRows(it.data)
                     }
                     is Resource.Error -> {
                         Log.d(TAG, it.message.toString())
                     }
                     else -> {
-                        Log.d(TAG, it.data.toString())
+
                     }
                 }
             })
@@ -103,24 +101,20 @@ class MainFragment : BrowseSupportFragment() {
         searchAffordanceColor = ContextCompat.getColor(requireContext(), R.color.search_opaque)
     }
 
-    private fun loadRows() {
+    private fun loadRows(playLists: List<Item>?) {
         val list = VideoList.LIST
 
         val rowsAdapter = ArrayObjectAdapter(ListRowPresenter())
-        val cardPresenter = CardPresenter()
+        val cardPresenter = YoutubeCardPresenter()
 
-        for (i in 0 until NUM_ROWS) {
-            if (i != 0) {
-                Collections.shuffle(list)
-            }
+        for (i in playLists?.indices!!) {
             val listRowAdapter = ArrayObjectAdapter(cardPresenter)
-            for (j in 0 until NUM_COLS) {
-                listRowAdapter.add(list[j % 5])
+            for (j in playLists[i].playListItems.items.indices) {
+                listRowAdapter.add(playLists[i].playListItems.items[j])
             }
-            val header = HeaderItem(i.toLong(), VideoList.MOVIE_CATEGORY[i])
+            val header = HeaderItem(i.toLong(), playLists[i].snippet.title)
             rowsAdapter.add(ListRow(header, listRowAdapter))
         }
-
         val gridHeader = HeaderItem(NUM_ROWS.toLong(), "PREFERENCES")
 
         val mGridPresenter = GridItemPresenter()
@@ -148,6 +142,7 @@ class MainFragment : BrowseSupportFragment() {
             row: Row
         ) {
 
+            //TODO
             if (item is Video) {
                 Log.d(TAG, "Item: $item")
                 val intent = Intent(activity, DetailsActivity::class.java)
@@ -176,6 +171,7 @@ class MainFragment : BrowseSupportFragment() {
             itemViewHolder: Presenter.ViewHolder?, item: Any?,
             rowViewHolder: RowPresenter.ViewHolder, row: Row
         ) {
+            //TODO
             if (item is Video) {
                 mBackgroundUri = item.backgroundImageUrl
                 startBackgroundTimer()

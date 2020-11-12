@@ -15,6 +15,4 @@ data class PlayLists(
     val nextPageToken: String = "",
     @SerializedName("pageInfo")
     val pageInfo: PageInfo = PageInfo(),
-
-    var playListItems: List<PlayListItems>
 )
